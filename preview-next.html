@@ -239,7 +239,7 @@ function selloutWorker(){
   const incoming=pending.map((p,i)=>parse(p,q.maps[i],cfg));let draft=q.add?sources.map(s=>({...s,rows:[...s.rows],periods:[...s.periods]})):[];const overlaps=[];
   for(const src of incoming){const oldPeriods=new Set(draft.flatMap(s=>s.periods)),common=src.periods.filter(p=>oldPeriods.has(p));if(common.length&&q.policy!=='replace'){overlaps.push(...common);continue;}if(common.length){const remove=new Set(common);draft=draft.map(s=>({...s,rows:s.rows.filter(r=>!remove.has(pm(r))),periods:s.periods.filter(p=>!remove.has(p))})).filter(s=>s.rows.length);}draft.push(src);}
   if(overlaps.length){postMessage({type:'overlap',periods:[...new Set(overlaps)].sort()});return;}
-  if(!draft.some(s=>s.rows.length))throw Error('유효한 데이터가 없습니다.');sources=draft;settings={...cfg};pending=[];rebuild();postMessage({type:'loaded',...describe()});
+  if(!draft.some(s=>s.rows.length))throw Error('유효한 데이터가 없습니다.');if(cfg.autoCompleteMonth){const latest=draft.flatMap(s=>s.periods).sort().at(-1),[y,m]=latest.split('-').map(Number),d=new Date(Date.UTC(y,m-2,1));cfg.completeMonth=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}sources=draft;settings={...cfg};pending=[];rebuild();postMessage({type:'loaded',...describe()});
  }
  function rebuild(){all=sources.flatMap(s=>s.rows);cache.clear();responseCache.clear();coverage={month:new Set(),week:new Set()};history={all:new Map(),on:new Map(),off:new Map()};stats={source:0,invalid:0,missingQty:0,missingValue:0,mismatch:0,codeFallback:0};sources.forEach(s=>{for(const k of Object.keys(stats))stats[k]+=s.stats[k]||0;});for(const r of all){coverage.month.add(pm(r));if(pw(r))coverage.week.add(pw(r));for(const mode of ['all','on','off']){const sold=mode==='all'?r.onSold||r.offSold:mode==='on'?r.onSold:r.offSold;if(sold){const id=sku(r),old=history[mode].get(id);if(!old||pm(r)<old.month||(pm(r)===old.month&&pw(r)<old.week))history[mode].set(id,{month:pm(r),week:pw(r)});}}}}
  function describe(){const facets={};for(const k of ['year','month','week',...dimensions])facets[k]=[...new Set(all.map(r=>r[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));return {facets,latest:[...coverage.month].sort().at(-1),stats:{...stats,rows:all.length,files:sources.length},settings,sources:sources.map(s=>({name:s.name,periods:s.periods,rows:s.rows.length})),coverage:{month:[...coverage.month].sort(),week:[...coverage.week].sort()}};}
@@ -341,8 +341,8 @@ function selloutWorker(){
   const required=['year','month','name','category','card','on','off'];
   if(mappingFiles.some(f=>required.some(k=>f.map[k]==null||f.map[k]<0))){busy.hidden=true;showMapping();return;}
   const split=mappingFiles.every(f=>f.map.onValue>=0&&f.map.offValue>=0),total=mappingFiles.every(f=>f.map.totalValue>=0);
-  const cfg=adding?{...settings}:{qtyConfirmed:true,money:split?'split':total?'total':'none',moneyConfirmed:split||total,multiplyConfirmed:false,revenueConfirmed:false,country:'',currency:'',flow:'',completeMonth:'',completeWeek:'',weekBasis:'source'};
-  if(loadFiles[0]?.name.startsWith('DEMO'))Object.assign(cfg,{revenueConfirmed:true,currency:'KRW',flow:'Sell-out',completeMonth:'2026-10',completeWeek:'2026-W40'});
+  const cfg=adding?{...settings}:{qtyConfirmed:true,money:split?'split':total?'total':'none',moneyConfirmed:split||total,multiplyConfirmed:false,revenueConfirmed:false,country:'',currency:'',flow:'',completeMonth:'',completeWeek:'',weekBasis:'source',autoCompleteMonth:true};
+  if(loadFiles[0]?.name.startsWith('DEMO'))Object.assign(cfg,{autoCompleteMonth:false,revenueConfirmed:true,currency:'KRW',flow:'Sell-out',completeMonth:'2026-10',completeWeek:'2026-W40'});
   busy.hidden=false;$('soBusyText').textContent='컬럼을 자동 인식해 분석 중입니다.';
   worker.postMessage({type:'import',maps:mappingFiles.map(f=>f.map),settings:cfg,add:adding,policy:'reject'});
  }
