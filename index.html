@@ -315,7 +315,7 @@ function selloutWorker(){
  function color(name){if(name==='기타')return '#afafaf';if(!colorMap.has(name))colorMap.set(name,colorMap.size<palette.length?palette[colorMap.size]:`hsl(${(colorMap.size*137.508)%360} 62% 45%)`);return colorMap.get(name);}
  function show(view){for(const id of ['uploadView','monthView','dashboardView','selloutView','soConfig'])$(id).hidden=id!==view;window.scrollTo(0,0);}
  function error(text){busy.hidden=true;const el=config.hidden?$('soStatus'):$('soConfigError');el.hidden=false;el.textContent=text;const notice=$('notice');notice.hidden=false;notice.textContent=text;setTimeout(()=>notice.hidden=true,9000);}
- function money(v){return v==null?'—':n(v*Number($('soScale').value))+(settings.currency?' '+settings.currency:' (원본 단위)');}
+ function money(v){return v==null?'—':n(v*Number($('soScale').value))+(settings.currency?' '+settings.currency:'');}
  const metricLabel=()=>state.metric==='qty'?'판매수량':settings.revenueConfirmed?'매출액':settings.money==='unit'?'단가×수량 금액':'확인된 금액';
  const display=v=>state.metric==='qty'?v==null?'—':n(v)+'개':money(v),pct=v=>v==null?'—':n(v)+'%',signed=v=>v==null?'—':(v>0?'+':'')+n(v);
  function comparisonLabel(c){if(!c)return '비교 불가';return c.label+(c.reason?' · '+c.reason:'');}
